@@ -1,3 +1,4 @@
 *.zip filter=lfs diff=lfs merge=lfs -text
+apex_21.2_en.zip filter=lfs diff=lfs merge=lfs -text
 ords/ords-21.4.3.zip filter=lfs diff=lfs merge=lfs -text
 db/apex_21.2_en.zip filter=lfs diff=lfs merge=lfs -text
