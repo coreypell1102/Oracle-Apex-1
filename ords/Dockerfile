@@ -2,14 +2,18 @@ FROM openjdk:11-jre-slim
 
 # Environment variables
 ENV ORDS_VERSION=21.4.3 \
-    ORDS_HOME=/opt/oracle/ords \
+    ORDS_HOME=/opt/oracle \
     ORACLE_DB_HOST=oracle-db \
     ORACLE_DB_PORT=1521 \
     ORACLE_SID=ORCLCDB \
     ORACLE_PWD=oracle \
     APEX_PUBLIC_USER_PWD=ApexR3st \
     CONFIG_DIR=/opt/oracle/ords/config
+# Make directories
+RUN mkdir -p $ORDS_HOME
+RUN mkdir -p $CONFIG_DIR
 
+# Set the working directory
 WORKDIR $ORDS_HOME
 
 # Install necessary packages
