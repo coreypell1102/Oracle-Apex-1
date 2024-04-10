@@ -1,33 +1,36 @@
+# Use an official Oracle Database image as the base
 FROM container-registry.oracle.com/database/express:latest
 
-# Environment variables
-ENV ORACLE_HOME=/opt/oracle/product/21c/dbhomeXE
-ENV ORACLE_SID=XE
-ENV ORACLE_USER=sys
-ENV ORACLE_PASSWORD=password1!
-ENV PATH=$ORACLE_HOME/bin:$PATH
-ENV APEX_ZIP=apex_21.2_en.zip
-ENV APEX_PASSWORD=password1!
+# Define environment variables for the installation and configuration
+ENV APEX_VERSION=21.2_en \
+    ORACLE_HOME=/opt/oracle/product/21c/dbhomeXE \
+    ORACLE_SID=XE \
+    APEX_INSTALL_DIR=/opt/oracle
 
-# Make oracle directory
-RUN mkdir -p /opt/oracle
+# Switch to the root user to perform installation steps
+USER root
 
-# Set the sys password
-RUN /home/oracle/setPassword.sh $ORACLE_USER $ORACLE_PASSWORD
+# Install necessary packages (example: unzip, rlwrap for convenience)
+RUN yum install -y unzip rlwrap && \
+    yum clean all
 
-# Copy apex installation files
-COPY $APEX_ZIP /opt/oracle
+# Switch back to the Oracle user to perform Oracle-related installation tasks
+USER oracle
 
-# Copy the setup.sql script
-COPY setup.sql /tmp
+# Copy the APEX installation archive from your host to the image
+COPY apex_${APEX_VERSION}.zip $APEX_INSTALL_DIR/
 
-# Unzip apex installation files
-RUN unzip /opt/oracle/$APEX_ZIP -d /opt/oracle && \
-    rm /opt/oracle/$APEX_ZIP && \
-    cd /opt/oracle/apex
+# Install APEX
+RUN cd $APEX_INSTALL_DIR && \
+    unzip apex_${APEX_VERSION}.zip && \
+    cd apex && \
+    sqlplus / as sysdba <<EOF
+-- Installing APEX
+@apexins.sql SYSAUX SYSAUX TEMP /i/
+-- Configure RESTful Services (optional)
+@apex_rest_config.sql
+-- Add additional configuration as necessary
+EOF
 
-# Run the setup.sql script
-RUN sqlplus sys/$ORACLE_PASSWORD as sysdba @/tmp/setup.sql
-
-# Expose ports
+# Expose the default TNS listener port
 EXPOSE 1521
