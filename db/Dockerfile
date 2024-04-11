@@ -10,6 +10,10 @@ ENV APEX_VERSION=21.2_en \
 # Switch to the root user to perform installation steps
 USER root
 
+# Copy entrypoint script to the image
+COPY entrypoint.sh /opt/oracle/
+RUN chmod +x /opt/oracle/entrypoint.sh
+
 # Install necessary packages (example: unzip, rlwrap for convenience)
 RUN yum install -y unzip rlwrap && \
     yum clean all
@@ -20,17 +24,9 @@ USER oracle
 # Copy the APEX installation archive from your host to the image
 COPY apex_${APEX_VERSION}.zip $APEX_INSTALL_DIR/
 
-# Install APEX
-RUN cd $APEX_INSTALL_DIR && \
-    unzip apex_${APEX_VERSION}.zip && \
-    cd apex && \
-    sqlplus / as sysdba <<EOF
--- Installing APEX
-@apexins.sql SYSAUX SYSAUX TEMP /i/
--- Configure RESTful Services (optional)
-@apex_rest_config.sql
--- Add additional configuration as necessary
-EOF
 
 # Expose the default TNS listener port
 EXPOSE 1521
+
+ENTRYPOINT [ "/opt/oracle/entrypoint.sh" ]
+CMD [ "/opt/oracle/runOracle.sh" ]
