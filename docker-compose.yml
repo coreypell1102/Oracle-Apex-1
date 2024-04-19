@@ -1,25 +1,40 @@
-version: '3.8'
+version: '1'
+
 services:
-  oracle-db:
+  apex-db:
     build: ./db
     ports:
       - "1521:1521"
     volumes:
       - oracle-data:/opt/oracle/oradata
+      - apex-dir:/opt/apex
     networks:
       - apex-network
 
   ords:
     build: ./ords
     depends_on:
-      - oracle-db
+      initializer:
+        condition: service_completed_successfully
     ports:
-      - "8080:8080"
+      - "8081:8081"
+    volumes:
+      - apex-dir:/opt/apex
+      - ords-dir:/opt/ords
     networks:
       - apex-network
+  
+  initializer:
+    image: busybox
+    command: sleep 600
+    depends_on:
+      apex-db:
+        condition: service_healthy
 
 volumes:
   oracle-data:
+  apex-dir:
+  ords-dir:
 networks:
   apex-network:
     driver: bridge

@@ -1,26 +1,28 @@
 #!/bin/bash
 
-# start Oracle Database
-/opt/oracle/runOracle.sh
+# whatever set -e does
+set -e
 
-# Wait for Oracle Database to fully start
-echo "Waiting for Oracle Database to be fully operational..."
-while ! sqlplus -s / as sysdba <<< "exit" >/dev/null 2>&1; do
-  sleep 10
-done
-echo "Oracle Database is operational."
+# Start Oracle
+/opt/oracle/runOracle.sh &
 
-# Install APEX
-cd $APEX_INSTALL_DIR && unzip apex_${APEX_VERSION}.zip && cd apex
+# Sleep for 1 minute to give Oracle time to create the default DB
+sleep 1m &&
 
-# Install APEX
-sqlplus / as sysdba <<EOF
--- Installing APEX
-@apexins.sql SYSAUX SYSAUX TEMP /i/
--- Configure RESTful Services (optional)
-@apex_rest_config.sql oracle oracle
--- Add additional configuration as necessary
-EOF
+# Set the sys password
+/home/oracle/setPassword.sh oracle &&
 
-# Continue running the container
+# Install Oracle APEX
+echo -e "exit" | sqlplus sys/oracle as sysdba @apexins.sql SYSAUX SYSAUX TEMP /i/ &&
+
+# Reset the apex_public_user password and unlock the account
+echo -e "alter user apex_public_user identified by oracle account unlock;\nexit" | sqlplus sys/oracle as sysdba &&
+
+# Congigure Oracle APEX RESTful Services
+echo -e "oracle\noracle\nexit" | sqlplus sys/oracle as sysdba @apex_rest_config.sql &&
+
+# create a new Instance Admin (this need work WIP)
+#echo -e "admin\nadmin\nWelcome_1\n" | sqlplus sys/oracle as sysdba @apxchpwd.sql &&
+
+# Continue to run the container as normal
 exec "$@"
